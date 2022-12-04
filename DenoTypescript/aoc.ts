@@ -1,7 +1,7 @@
 
 export function printDayHeader(day: number, title: string){
-    let firstLine = `--- Day ${day}: ${title} ---`;
-    let secondLine = "=".repeat(firstLine.length);
+    const firstLine = `--- Day ${day}: ${title} ---`;
+    const secondLine = "=".repeat(firstLine.length);
 
     console.log("");
     console.log(firstLine);
@@ -9,8 +9,8 @@ export function printDayHeader(day: number, title: string){
 }
 
 export function printPartHeader(id: number, title: string){
-    let firstLine = `Part ${id}: ${title}`;
-    let secondLine = "=".repeat(firstLine.length);
+    const firstLine = `Part ${id}: ${title}`;
+    const secondLine = "-".repeat(firstLine.length);
 
     console.log("");
     console.log(firstLine);

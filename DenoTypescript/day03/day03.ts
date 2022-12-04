@@ -1,5 +1,6 @@
 import { readFileSync } from "../deps.ts";
 import { isEmptyString, isLowercase, chr, partitionArray, intersectSets } from "../utility.ts";
+import * as aoc from "../aoc.ts";
 
 
 function itemToPrio(item: string): number {
@@ -32,12 +33,11 @@ const lines = data.split("\r\n").filter( (l) => !isEmptyString(l));
 const sacks = lines.map((l) => new Rucksack(l) );
 // console.log("Rucksacks: ", sacks);
 
-console.log("\n\n--- Day 3: Rucksack Reorganization ---");
-console.log("==========================================");
+
+aoc.printDayHeader(3, "Rucksack Reorganization");
 
 // ----------------------------------------------------------------------------
-console.log("Part 1: Items in both compartments");
-console.log("----------------------------------");
+aoc.printPartHeader(1, "Items in both compartments");
 
 const items = sacks.map( (s) => s.findItemsInBoth() ).reduce( (acc: Array<string>, curr) => acc.concat(Array.from(curr.values())), []);
 // console.log("Items: ", items);
@@ -48,8 +48,7 @@ console.log("Ergebnis Teil 1 (Summe der Prioritäten): ", resPart1);
 
 
 // ----------------------------------------------------------------------------
-console.log("\n\nPart 2: ");
-console.log("----------------------------------");
+aoc.printPartHeader(2, "Sum of evaluted badges");
 
 const groups = partitionArray(sacks, 3);
 // console.log("Groups: ", groups);

@@ -1,4 +1,6 @@
 import { readFileSync } from "../deps.ts";
+import * as aoc from "../aoc.ts";
+
 
 const data = readFileSync('Puzzle1.txt','utf8');
 const splitted = data.split("\r\n\r\n");
@@ -13,20 +15,18 @@ const numberBlocks = splitted.map(function (block) {
 const sums = numberBlocks.map( (na) => na.reduce((acc,curr) => acc + curr, 0));
 console.log("Summen: ", sums);
 
-console.log("--- Day 1: Calorie Counting ---");
-console.log("===============================");
+
+aoc.printDayHeader(1, "Calorie Counting");
 
 // ----------------------------------------------------------------------------
-console.log("Part 1: Most calories");
-console.log("---------------------");
+aoc.printPartHeader(1, "Most calories");
 
 const highest = sums.reduce((a, b) => Math.max(a, b), -Infinity);
 console.log("Maximum: ", highest);
 
 
 // ----------------------------------------------------------------------------
-console.log("Part 2: Sum three highest calories");
-console.log("----------------------------------");
+aoc.printPartHeader(2, "Sum three highest calories");
 
 const sortedNumbers: Array<number> = sums.sort( (l,r) => r - l);
 console.log(sortedNumbers);

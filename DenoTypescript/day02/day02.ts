@@ -1,5 +1,6 @@
 import { readFileSync } from "../deps.ts";
 import { isEmptyString } from "../utility.ts"
+import * as aoc from "../aoc.ts";
 
 enum Choice {
   Unknown = 0,
@@ -66,19 +67,18 @@ class Round {
 
 const data = readFileSync("Puzzle1.txt", "utf8");
 const lines = data.split("\r\n").filter( (l) => !isEmptyString(l));
-console.log("Lines: ", lines);
+// console.log("Lines: ", lines);
 const rounds = lines.map((l) => {
   const tokens = l.split(" ");
   return new Round(tokens[0], tokens[1]);
 });
-console.log("Rounds: ", rounds);
+// console.log("Rounds: ", rounds);
 
-console.log("\n\n--- Day 2: Rock Paper Scissors ---");
-console.log("==================================");
+
+aoc.printDayHeader(2, "Rock Paper Scissors");
 
 // ----------------------------------------------------------------------------
-console.log("Part 1: Points through the strategy");
-console.log("-----------------------------------");
+aoc.printPartHeader(1, "Points through the strategy");
 
 const pointsInRoundsP1 = rounds.map((r) => r.calcPointsPart1());
 // console.log("  Points/round: ", pointsInRoundsP1);
@@ -88,8 +88,7 @@ console.log("Summe: ", resPart1);
 
 
 // ----------------------------------------------------------------------------
-console.log("\n\nPart 2: ");
-console.log("----------------------------------");
+aoc.printPartHeader(2, "Points with provided result");
 
 const pointsInRoundsP2 = rounds.map((r) => r.calcPointsPart2());
 // console.log("  Points/round: ", pointsInRoundsP2);

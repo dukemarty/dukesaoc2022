@@ -1,4 +1,3 @@
-import { numberToBytes } from "https://deno.land/std@0.167.0/node/internal_binding/buffer.ts";
 import { readFileSync } from "../deps.ts";
 import { isEmptyString } from "../utility.ts";
 import * as aoc from "../aoc.ts";
