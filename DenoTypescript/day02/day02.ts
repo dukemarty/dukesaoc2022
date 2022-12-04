@@ -1,7 +1,5 @@
-import { readFileSync } from "https://deno.land/std@0.167.0/node/fs.ts";
-import { charLengthAt } from "https://deno.land/std@0.167.0/node/internal/readline/utils.mjs";
-
-const isEmptyString = (data: string): boolean => typeof data === "string" && data.trim().length == 0;
+import { readFileSync } from "../deps.ts";
+import { isEmptyString } from "../utility.ts"
 
 enum Choice {
   Unknown = 0,
@@ -78,15 +76,15 @@ console.log("Rounds: ", rounds);
 console.log("\n\n--- Day 2: Rock Paper Scissors ---");
 console.log("==================================");
 
-// // ----------------------------------------------------------------------------
-// console.log("Part 1: Points through the strategy");
-// console.log("-----------------------------------");
+// ----------------------------------------------------------------------------
+console.log("Part 1: Points through the strategy");
+console.log("-----------------------------------");
 
-// const pointsInRoundsP1 = rounds.map((r) => r.calcPointsPart1());
+const pointsInRoundsP1 = rounds.map((r) => r.calcPointsPart1());
 // console.log("  Points/round: ", pointsInRoundsP1);
-// const resPart1 = pointsInRoundsP1.reduce((acc, curr) => acc + curr, 0);
+const resPart1 = pointsInRoundsP1.reduce((acc, curr) => acc + curr, 0);
 
-// console.log("Summe: ", resPart1);
+console.log("Summe: ", resPart1);
 
 
 // ----------------------------------------------------------------------------

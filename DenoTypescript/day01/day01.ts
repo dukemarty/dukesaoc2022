@@ -1,5 +1,4 @@
-import { readFileSync } from "https://deno.land/std@0.167.0/node/fs.ts";
-import { ERROR_CTX_CONSOLE_CONNECT } from "https://deno.land/std@0.167.0/node/internal_binding/_winerror.ts";
+import { readFileSync } from "../deps.ts";
 
 const data = readFileSync('Puzzle1.txt','utf8');
 const splitted = data.split("\r\n\r\n");

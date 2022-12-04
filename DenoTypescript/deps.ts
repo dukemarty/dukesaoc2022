@@ -1,0 +1,1 @@
+export { readFileSync } from "https://deno.land/std@0.167.0/node/fs.ts";
