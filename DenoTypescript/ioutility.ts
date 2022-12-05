@@ -7,3 +7,11 @@ export function readUniformFilledLines(filename: string): Array<string> {
 
     return lines;
 }
+
+export function readEmptyLineSeparatedBlocks(filename: string): Array<Array<string>> {
+    const data = readFileSync(filename, 'utf8');
+    const rawBlocks = data.split("\r\n\r\n").filter((b) => !isEmptyString(b));
+    const blocks = rawBlocks.map((rb) => rb.split("\r\n").filter((l) => !isEmptyString(l)));
+
+    return blocks;
+}
