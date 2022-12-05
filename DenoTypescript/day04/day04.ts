@@ -1,5 +1,4 @@
-import { readFileSync } from "../deps.ts";
-import { isEmptyString } from "../utility.ts";
+import * as io from "../ioutility.ts";
 import * as aoc from "../aoc.ts";
 
 
@@ -43,8 +42,7 @@ class ElvesPair {
     }
 }
 
-const data = readFileSync("Puzzle1.txt", "utf8");
-const lines = data.split("\r\n").filter( (l) => !isEmptyString(l));
+const lines = io.readUniformFilledLines("Puzzle1.txt");
 const pairs = lines.map( (l) => new ElvesPair(l));
 
 aoc.printDayHeader(4, "Camp Cleanup");

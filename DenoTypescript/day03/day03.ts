@@ -1,5 +1,5 @@
-import { readFileSync } from "../deps.ts";
-import { isEmptyString, isLowercase, chr, partitionArray, intersectSets } from "../utility.ts";
+import { isLowercase, chr, partitionArray, intersectSets } from "../utility.ts";
+import * as io from "../ioutility.ts";
 import * as aoc from "../aoc.ts";
 
 
@@ -27,8 +27,7 @@ class Rucksack {
 }
 
 
-const data = readFileSync("Puzzle1.txt", "utf8");
-const lines = data.split("\r\n").filter( (l) => !isEmptyString(l));
+const lines = io.readUniformFilledLines("Puzzle1.txt");
 // console.log("Lines: ", lines);
 const sacks = lines.map((l) => new Rucksack(l) );
 // console.log("Rucksacks: ", sacks);
