@@ -1,5 +1,3 @@
-import { readFileSync } from "../deps.ts";
-import { isEmptyString } from "../utility.ts";
 import * as aoc from "../aoc.ts";
 import * as io from "../ioutility.ts";
 import { chr } from "../utility.ts";
