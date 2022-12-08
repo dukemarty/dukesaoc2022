@@ -109,7 +109,7 @@ const res1 = Array.from(directories.values()).filter((d) => d.totalSize! <= 100_
 console.log("Result: ", res1);
 
 // ----------------------------------------------------------------------------
-aoc.printPartHeader(1, "Size of best dir to delete");
+aoc.printPartHeader(2, "Size of best dir to delete");
 
 const unusedSpace = 70000000 - directories.get("")!.totalSize!;
 const requiredSpace = 30000000 - unusedSpace;
