@@ -79,15 +79,15 @@ function analyzeHeights(trees: Array<string>): Visibility[][] {
 }
 
 function determineViewLength(trees: Array<string>, r: number, c:number, dir: [number, number]):number {
-    let pr = r + dir[0];
-    let pc = c + dir[1];
+    const [dr, dc] = dir;
+    let [pr, pc] = [r + dr, c + dc];
     let i=1;
     for (;; ++i){
         if (trees[pr][pc] >= trees[r][c]){
             break;
         }
-        pr += dir[0];
-        pc += dir[1];
+        pr += dr;
+        pc += dc;
 
         if (!(pr>=0 && pr<trees.length && pc>=0 && pc<trees[0].length)){
             break;
