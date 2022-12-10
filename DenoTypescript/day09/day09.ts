@@ -31,37 +31,42 @@ function parseMove(line: string): Array<Motion> {
 }
 
 
-class Game {
+class RopeSim {
 
     grid: Array<Array<string>>
-    posH: Position
-    posT: Position
+    pos: Array<Position>
+    tailIndex: number
 
-    constructor(public size: number) {
+    constructor(public gridSize: number, public knotCount: number = 2) {
         this.grid = new Array<Array<string>>();
-        for (let r = 0; r < size; ++r) {
+        for (let r = 0; r < gridSize; ++r) {
             const newRow = new Array<string>();
-            for (let c = 0; c < size; ++c) {
+            for (let c = 0; c < gridSize; ++c) {
                 newRow.push(".");
             }
             this.grid.push(newRow);
         }
 
-        const center = Math.floor(size / 2);
-        this.posH = [center, center];
-        this.posT = [center, center];
+        const center = Math.floor(gridSize / 2);
+        this.pos = new Array<Position>(this.knotCount);
+        for (let i = 0; i < this.knotCount; ++i) {
+            this.pos[i] = [center, center];
+        }
+        this.tailIndex = this.knotCount - 1;
     }
 
     runMoves(moves: Array<Motion>) {
-        this.grid[this.posT[0]][this.posT[1]] = "#"
+        this.grid[this.pos[this.tailIndex][0]][this.pos[this.tailIndex][1]] = "#"
         moves.forEach((m) => {
-            this.posH = [this.posH[0] + m[0], this.posH[1] + m[1]];
-            const [distR, distC] = [this.posH[0] - this.posT[0], this.posH[1] - this.posT[1]];
-            if (Math.abs(distR) > 1 || Math.abs(distC) > 1) {
-                this.posT = [this.posT[0] + Math.ceil(Math.abs(distR) / 2) * Math.sign(distR), this.posT[1] + Math.ceil(Math.abs(distC) / 2) * Math.sign(distC)];
-                // console.log(this.posT);
-                this.grid[this.posT[0]][this.posT[1]] = "#"
+            this.pos[0] = [this.pos[0][0] + m[0], this.pos[0][1] + m[1]];
+            for (let i = 1; i < this.knotCount; ++i) {
+                const [distR, distC] = [this.pos[i - 1][0] - this.pos[i][0], this.pos[i - 1][1] - this.pos[i][1]];
+                if (Math.abs(distR) > 1 || Math.abs(distC) > 1) {
+                    this.pos[i] = [this.pos[i][0] + Math.ceil(Math.abs(distR) / 2) * Math.sign(distR), this.pos[i][1] + Math.ceil(Math.abs(distC) / 2) * Math.sign(distC)];
+                    // console.log(this.posT);
+                }
             }
+            this.grid[this.pos[this.tailIndex][0]][this.pos[this.tailIndex][1]] = "#"
         });
     }
 
@@ -85,20 +90,20 @@ const moves = rawMoves.flatMap(parseMove);
 
 
 // ----------------------------------------------------------------------------
-aoc.printPartHeader(1, "Number of visited spots");
+aoc.printPartHeader(1, "Number of visited spots with 2-knots-rope");
 
-const field = new Game(300);
-field.posH = [200, 50];
-field.posT = [200, 50];
-field.runMoves(moves);
+const field1 = new RopeSim(400, 2);
+field1.runMoves(moves);
 // field.printGrid();
-const res1 = field.countHits();
+const res1 = field1.countHits();
 console.log("Result: ", res1);
 
-// // ----------------------------------------------------------------------------
-// aoc.printPartHeader(2, "Highest scenic score");
+// ----------------------------------------------------------------------------
+aoc.printPartHeader(2, "Number of visited spots with 10-knots-rope");
 
-// const scenicScores = analyzeViews(treeMap);
-// const res2 = Math.max(...scenicScores.map( (r) => Math.max(...r) ))
-// console.log("Result: ", res2);
+const field2 = new RopeSim(400, 10);
+field2.runMoves(moves);
+// field.printGrid();
+const res2 = field2.countHits();
+console.log("Result: ", res2);
 
