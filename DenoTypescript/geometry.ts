@@ -1,6 +1,26 @@
 
 export type Position = { X: number, Y: number };
 
+export type Vector = { X: number, Y: number };
+
+export function getVector(from: Position, to: Position) {
+    return { X: to.X - from.X, Y: to.Y - from.Y };
+}
+
+export function transformVector(vec: Vector, trafo: (comp: number)=> number){
+    vec.X = trafo(vec.X);
+    vec.Y = trafo(vec.Y);
+}
+
+export function movePosition(pos: Position, v: Vector) {
+    pos.X += v.X;
+    pos.Y += v.Y;
+}
+
+export function movedPosition(pos: Position, v: Vector) {
+    return { X: pos.X + v.X, Y: pos.Y + v.Y };
+}
+
 type BoundingBox = { MinX: number, MaxX: number, MinY: number, MaxY: number };
 
 export class Section {

@@ -1,26 +1,24 @@
 import * as aoc from "../aoc.ts";
 import * as io from "../ioutility.ts";
+import * as geo from "../geometry.ts";
 
 
-type Position = [number, number];
-type Motion = [number, number];
-
-const directions = new Map<string, Motion>([
-    ["L", [0, -1]],
-    ["R", [0, 1]],
-    ["U", [-1, 0]],
-    ["D", [1, 0]],
+const directions = new Map<string, geo.Vector>([
+    ["L", { X: -1, Y: 0 }],
+    ["R", { X: 1, Y: 0 }],
+    ["U", { X: 0, Y: -1 }],
+    ["D", { X: 0, Y: 1 }],
 ]);
 
-function parseMove(line: string): Array<Motion> {
+function parseMove(line: string): Array<geo.Vector> {
     const parts = line.split(" ");
     const dir = directions.get(parts[0]);
 
     if (dir === undefined) {
-        return new Array<Motion>();
+        return new Array<geo.Vector>();
     }
 
-    const res = new Array<Motion>();
+    const res = new Array<geo.Vector>();
 
     for (let i = 0; i < parseInt(parts[1]); ++i) {
         res.push(dir);
@@ -33,7 +31,7 @@ function parseMove(line: string): Array<Motion> {
 class RopeSim {
 
     grid: Array<Array<string>>
-    pos: Array<Position>
+    pos: Array<geo.Position>
     tailIndex: number
 
     constructor(public gridSize: number, public knotCount: number = 2) {
@@ -47,25 +45,26 @@ class RopeSim {
         }
 
         const center = Math.floor(gridSize / 2);
-        this.pos = new Array<Position>(this.knotCount);
+        this.pos = new Array<geo.Position>(this.knotCount);
         for (let i = 0; i < this.knotCount; ++i) {
-            this.pos[i] = [center, center];
+            this.pos[i] = { X: center, Y: center };
         }
         this.tailIndex = this.knotCount - 1;
     }
 
-    runMoves(moves: Array<Motion>) {
-        this.grid[this.pos[this.tailIndex][0]][this.pos[this.tailIndex][1]] = "#"
+    runMoves(moves: Array<geo.Vector>) {
+        this.grid[this.pos[this.tailIndex].Y][this.pos[this.tailIndex].X] = "#"
         moves.forEach((m) => {
-            this.pos[0] = [this.pos[0][0] + m[0], this.pos[0][1] + m[1]];
+            geo.movePosition(this.pos[0], m);
             for (let i = 1; i < this.knotCount; ++i) {
-                const [distR, distC] = [this.pos[i - 1][0] - this.pos[i][0], this.pos[i - 1][1] - this.pos[i][1]];
-                if (Math.abs(distR) > 1 || Math.abs(distC) > 1) {
-                    this.pos[i] = [this.pos[i][0] + Math.ceil(Math.abs(distR) / 2) * Math.sign(distR), this.pos[i][1] + Math.ceil(Math.abs(distC) / 2) * Math.sign(distC)];
+                const dist = geo.getVector(this.pos[i], this.pos[i-1]);
+                if (Math.abs(dist.X) > 1 || Math.abs(dist.Y) > 1) {
+                    geo.transformVector(dist, c => Math.ceil(Math.abs(c) / 2) * Math.sign(c))
+                    geo.movePosition(this.pos[i], dist);
                     // console.log(this.posT);
                 }
             }
-            this.grid[this.pos[this.tailIndex][0]][this.pos[this.tailIndex][1]] = "#"
+            this.grid[this.pos[this.tailIndex].Y][this.pos[this.tailIndex].X] = "#"
         });
     }
 
@@ -95,7 +94,7 @@ const field1 = new RopeSim(400, 2);
 field1.runMoves(moves);
 // field.printGrid();
 const res1 = field1.countHits();
-console.log("Result: ", res1);
+console.log("Result:   ", res1);
 
 // ----------------------------------------------------------------------------
 aoc.printPartHeader(2, "Number of visited spots with 10-knots-rope");
@@ -104,5 +103,5 @@ const field2 = new RopeSim(400, 10);
 field2.runMoves(moves);
 // field.printGrid();
 const res2 = field2.countHits();
-console.log("Result: ", res2);
+console.log("Result:   ", res2);
 
