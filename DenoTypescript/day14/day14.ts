@@ -1,24 +1,19 @@
 import * as aoc from "../aoc.ts";
 import * as io from "../ioutility.ts";
+import * as geo from "../geometry.ts";
 
 
-type Point = { X: number, Y: number };
-
-type BoundingBox = { MinX: number, MaxX: number, MinY: number, MaxY: number };
 
 class Rock {
 
-    points: Array<Point>
+    points: Array<geo.Position>
 
     constructor(line: string) {
         const tokens = line.split("->").map(t => t.trim());
-        this.points = tokens.map(t => {
-            const parts = t.split(",");
-            return { X: parseInt(parts[0]), Y: parseInt(parts[1]) };
-        });
+        this.points = tokens.map(t => geo.parsePosition(t));
     }
 
-    getBoundingBox(): BoundingBox {
+    getBoundingBox(): geo.BoundingBox {
         return { MinX: Math.min(...this.points.map(p => p.X)), MaxX: Math.max(...this.points.map(p => p.X)), MinY: Math.min(...this.points.map(p => p.Y)), MaxY: Math.max(...this.points.map(p => p.Y)) };
     }
 }
@@ -26,13 +21,13 @@ class Rock {
 class Cave {
 
     cave!: Array<Array<string>>
-    closeSection: BoundingBox
-    section: BoundingBox
+    closeSection: geo.BoundingBox
+    section: geo.BoundingBox
 
     constructor(public rocks: Array<Rock>) {
         const boundingBoxes = rocks.map(r => r.getBoundingBox());
         boundingBoxes.push({ MinX: 500, MaxX: 500, MinY: 0, MaxY: 0 })
-        this.closeSection = this.mergeBoxes(boundingBoxes);
+        this.closeSection = geo.mergeBoundingBoxes(boundingBoxes);
         this.section = this.closeSection;
     }
 
@@ -52,18 +47,18 @@ class Cave {
         this.rocks.map(r => {
             if (r.points.length == 1) {
                 const p = r.points[0];
-                this.set(p.X, p.Y);
+                this.set(p);
             } else {
                 for (let i = 1; i < r.points.length; ++i) {
                     const p = r.points[i - 1];
                     const q = r.points[i];
                     if (p.X == q.X) {
                         for (let y = Math.min(p.Y, q.Y); y < Math.max(p.Y, q.Y) + 1; ++y) {
-                            this.set(p.X, y);
+                            this.set({ X: p.X, Y: y });
                         }
                     } else {
                         for (let x = Math.min(p.X, q.X); x < Math.max(p.X, q.X) + 1; ++x) {
-                            this.set(x, p.Y);
+                            this.set({ X: x, Y: p.Y });
                         }
                     }
                 }
@@ -71,32 +66,30 @@ class Cave {
         });
 
         // add pour-in
-        this.set(500, 0, "+");
+        this.set({ X: 500, Y: 0 }, "+");
     }
 
     pourSand1(): number {
         let res = 0;
 
         while (true) {
-            let x = 500;
-            let y = 0;
+            let p = { X: 500, Y: 0 };
 
             let isResting = false;
             while (!isResting) {
-                if (x == this.section.MinX || x == this.section.MaxX || y == this.section.MaxY) {
+                if (p.X == this.section.MinX || p.X == this.section.MaxX || p.Y == this.section.MaxY) {
                     break;
                 }
 
-                if (this.isFree(x, y + 1)) {
-                    ++y;
-                } else if (this.isFree(x - 1, y + 1)) {
-                    --x;
-                    ++y;
-                } else if (this.isFree(x + 1, y + 1)) {
-                    ++x;
-                    ++y;
+                const [below, belowLeft, belowRight] = this.getPossibleTargets(p);
+                if (this.isFree(below)) {
+                    p = below;
+                } else if (this.isFree(belowLeft)) {
+                    p = belowLeft;
+                } else if (this.isFree(belowRight)) {
+                    p = belowRight;
                 } else {
-                    this.set(x, y, "o");
+                    this.set(p, "o");
                     isResting = true;
                 }
             }
@@ -128,18 +121,18 @@ class Cave {
         this.rocks.map(r => {
             if (r.points.length == 1) {
                 const p = r.points[0];
-                this.set(p.X, p.Y);
+                this.set(p);
             } else {
                 for (let i = 1; i < r.points.length; ++i) {
                     const p = r.points[i - 1];
                     const q = r.points[i];
                     if (p.X == q.X) {
                         for (let y = Math.min(p.Y, q.Y); y < Math.max(p.Y, q.Y) + 1; ++y) {
-                            this.set(p.X, y);
+                            this.set({ X: p.X, Y: y });
                         }
                     } else {
                         for (let x = Math.min(p.X, q.X); x < Math.max(p.X, q.X) + 1; ++x) {
-                            this.set(x, p.Y);
+                            this.set({ X: x, Y: p.Y });
                         }
                     }
                 }
@@ -147,11 +140,11 @@ class Cave {
         });
 
         // add pour-in
-        this.set(500, 0, "+");
+        this.set({ X: 500, Y: 0 }, "+");
 
         // add bottom
         for (let x = this.section.MinX; x < this.section.MaxX + 1; ++x) {
-            this.set(x, this.closeSection.MaxY + 2, "#");
+            this.set({ X: x, Y: this.closeSection.MaxY + 2 }, "#");
         }
     }
 
@@ -159,28 +152,26 @@ class Cave {
         let res = 0;
 
         while (true) {
-            let x = 500;
-            let y = 0;
+            let p = { X: 500, Y: 0 };
 
             let isResting = false;
             while (!isResting) {
-                if (this.isFree(x, y + 1)) {
-                    ++y;
-                } else if (this.isFree(x - 1, y + 1)) {
-                    --x;
-                    ++y;
-                } else if (this.isFree(x + 1, y + 1)) {
-                    ++x;
-                    ++y;
+                const [below, belowLeft, belowRight] = this.getPossibleTargets(p);
+                if (this.isFree(below)) {
+                    p = below;
+                } else if (this.isFree(belowLeft)) {
+                    p = belowLeft;
+                } else if (this.isFree(belowRight)) {
+                    p = belowRight;
                 } else {
-                    this.set(x, y, "o");
+                    this.set(p, "o");
                     isResting = true;
                 }
             }
 
             ++res;
 
-            if (x==500 && y==0){
+            if (p.X == 500 && p.Y == 0) {
                 break;
             }
         }
@@ -188,28 +179,24 @@ class Cave {
         return res;
     }
 
+    private getPossibleTargets(p: geo.Position): Array<geo.Position> {
+        return [geo.movedPosition(p, { X: 0, Y: 1 }),
+        geo.movedPosition(p, { X: -1, Y: 1 }),
+        geo.movedPosition(p, { X: 1, Y: 1 })];
+    }
+
     print() {
         console.log(this.cave.map(l => l.join("")).join("\n"));
     }
 
-    private isFree(x: number, y: number): boolean {
-        // console.log(`${x}/${y} -> ${x - this.section.MinX}/${y - this.section.MinY}`);
-        return this.cave[y - this.section.MinY][x - this.section.MinX] == ".";
+    private isFree(p: geo.Position): boolean {
+        // console.log(`${p.X}/${p.Y} -> ${p.X - this.section.MinX}/${p.Y - this.section.MinY}`);
+        return this.cave[p.Y - this.section.MinY][p.X - this.section.MinX] == ".";
     }
 
-    
-    private set(x: number, y: number, sym = "#") {
-        // console.log(`${x}/${y} -> ${x - this.section.MinX}/${y - this.section.MinY}`);
-        this.cave[y - this.section.MinY][x - this.section.MinX] = sym;
-    }
-
-    private mergeBoxes(boxes: Array<BoundingBox>): BoundingBox {
-        return {
-            MinX: Math.min(...boxes.map(bb => bb.MinX)),
-            MaxX: Math.max(...boxes.map(bb => bb.MaxX)),
-            MinY: Math.min(...boxes.map(bb => bb.MinY)),
-            MaxY: Math.max(...boxes.map(bb => bb.MaxY)),
-        };
+    private set(p: geo.Position, sym = "#") {
+        // console.log(`${p.X}/${p.Y} -> ${p.X - this.section.MinX}/${p.Y - this.section.MinY}`);
+        this.cave[p.Y - this.section.MinY][p.X - this.section.MinX] = sym;
     }
 }
 
@@ -230,8 +217,9 @@ aoc.printPartHeader(1, "Sand until free-flowing");
 
 cave.initializeCave1();
 const res1 = cave.pourSand1();
-cave.print();
-console.log("Result: ", res1);
+// cave.print();
+console.log("Result:   ", res1);
+// console.log("Original: ", 964);
 
 
 // ----------------------------------------------------------------------------
@@ -239,5 +227,6 @@ aoc.printPartHeader(2, "Sand until hole closed up");
 
 cave.initializeCave2();
 const res2 = cave.pourSand2();
-cave.print();
-console.log("Result: ", res2);
+// cave.print();
+console.log("Result:   ", res2);
+// console.log("Original: ", 32041);

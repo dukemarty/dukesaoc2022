@@ -1,13 +1,19 @@
 
 export type Position = { X: number, Y: number };
 
+export function parsePosition(line: string, sep = ",") {
+    const tokens = line.split(sep);
+    return { X: parseInt(tokens[0].trim()), Y: parseInt(tokens[1].trim()) };
+
+}
+
 export type Vector = { X: number, Y: number };
 
 export function getVector(from: Position, to: Position) {
     return { X: to.X - from.X, Y: to.Y - from.Y };
 }
 
-export function transformVector(vec: Vector, trafo: (comp: number)=> number){
+export function transformVector(vec: Vector, trafo: (comp: number) => number) {
     vec.X = trafo(vec.X);
     vec.Y = trafo(vec.Y);
 }
@@ -21,7 +27,17 @@ export function movedPosition(pos: Position, v: Vector) {
     return { X: pos.X + v.X, Y: pos.Y + v.Y };
 }
 
-type BoundingBox = { MinX: number, MaxX: number, MinY: number, MaxY: number };
+export type BoundingBox = { MinX: number, MaxX: number, MinY: number, MaxY: number };
+
+export function mergeBoundingBoxes(boxes: Array<BoundingBox>): BoundingBox {
+    return {
+        MinX: Math.min(...boxes.map(bb => bb.MinX)),
+        MaxX: Math.max(...boxes.map(bb => bb.MaxX)),
+        MinY: Math.min(...boxes.map(bb => bb.MinY)),
+        MaxY: Math.max(...boxes.map(bb => bb.MaxY)),
+    };
+}
+
 
 export class Section {
 
