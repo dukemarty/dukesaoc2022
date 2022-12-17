@@ -1,25 +1,24 @@
 import * as aoc from "../aoc.ts";
 import * as io from "../ioutility.ts";
 import { chr } from "../utility.ts";
+import * as geo from "../geometry.ts";
 
 const posStates = ['UNSEEN', 'SEEN', 'VISITED'] as const;
 type PosState = typeof posStates[number];
-
-type Position = [number, number];
 
 class StepInfo {
 
     state: PosState = 'UNSEEN';
     dist: number | undefined = undefined;
 
-    constructor(public pred: Position, public height: number) { }
+    constructor(public pred: geo.Position, public height: number) { }
 }
 
 class PathFinder {
 
-    start: Position
-    destination: Position
-    lowpoints: Array<Position>
+    start: geo.Position
+    destination: geo.Position
+    lowpoints: Array<geo.Position>
     map: Array<Array<StepInfo>>
 
     constructor(public grid: Array<string>) {
@@ -35,7 +34,7 @@ class PathFinder {
                         height = 25;
                     }
                 }
-                nextArray.push(new StepInfo([-1, -1], height));
+                nextArray.push(new StepInfo({ X: -1, Y: -1 }, height));
             }
             this.map.push(nextArray);
         }
@@ -54,22 +53,22 @@ class PathFinder {
         }
     }
 
-    findPath(start: Position): number {
+    findPath(start: geo.Position): number {
         this.resetMap();
 
-        this.map[start[0]][start[1]].state = 'SEEN';
-        this.map[start[0]][start[1]].dist = 0;
+        this.map[start.Y][start.X].state = 'SEEN';
+        this.map[start.Y][start.X].dist = 0;
 
         const unvisited = [start];
         while (unvisited.length > 0) {
             const nextPos = unvisited.splice(0, 1)[0];
-            const pos = this.map[nextPos[0]][nextPos[1]];
+            const pos = this.map[nextPos.Y][nextPos.X];
             pos.state = 'VISITED';
 
             const neighbours = this.getValidNeighbours(nextPos);
             let reached = false;
             neighbours.forEach(n => {
-                const cell = this.map[n[0]][n[1]];
+                const cell = this.map[n.Y][n.X];
 
                 if (cell.state === 'VISITED') { return; }
                 if (cell.state === 'SEEN') {
@@ -85,32 +84,32 @@ class PathFinder {
                     unvisited.push(n);
                 }
 
-                if (n[0] == this.destination[0] && n[1] == this.destination[1]) {
+                if (n.X == this.destination.X && n.Y == this.destination.Y) {
                     reached = true;
                 }
             });
 
             if (reached) {
-                return this.map[this.destination[0]][this.destination[1]].dist!;
+                return this.map[this.destination.Y][this.destination.X].dist!;
             }
 
-            unvisited.sort((a: Position, b: Position) => this.calcHeuristic(a) - this.calcHeuristic(b));
+            unvisited.sort((a: geo.Position, b: geo.Position) => this.calcHeuristic(a) - this.calcHeuristic(b));
         }
 
         return -1;
     }
 
-    private calcHeuristic(p: Position): number {
-        return this.map[p[0]][p[1]].dist! + (Math.abs(p[0] - this.destination[0]) + Math.abs(p[1] - this.destination[1]));
+    private calcHeuristic(p: geo.Position): number {
+        return this.map[p.Y][p.X].dist! + (Math.abs(p.Y - this.destination.Y) + Math.abs(p.X - this.destination.X));
     }
 
-    private findPositions(char: string): Array<Position> {
-        const res = new Array<Position>();
+    private findPositions(char: string): Array<geo.Position> {
+        const res = new Array<geo.Position>();
 
         for (let r = 0; r < this.grid.length; ++r) {
             for (let c = 0; c < this.grid[0].length; ++c) {
                 if (this.grid[r][c] === char) {
-                    res.push([r, c]);
+                    res.push({ X: c, Y: r });
                 }
             }
         }
@@ -118,27 +117,27 @@ class PathFinder {
         return res;
     }
 
-    private getValidNeighbours(pos: Position): Array<Position> {
-        const res = new Array<Position>();
+    private getValidNeighbours(pos: geo.Position): Array<geo.Position> {
+        const res = new Array<geo.Position>();
 
-        if (pos[0] > 0) {
-            if (this.map[pos[0] - 1][pos[1]].height - this.map[pos[0]][pos[1]].height <= 1) {
-                res.push([pos[0] - 1, pos[1]]);
+        if (pos.Y > 0) {
+            if (this.map[pos.Y - 1][pos.X].height - this.map[pos.Y][pos.X].height <= 1) {
+                res.push(geo.movedPosition(pos, { X: 0, Y: -1 }));
             }
         }
-        if (pos[0] < this.map.length - 1) {
-            if (this.map[pos[0] + 1][pos[1]].height - this.map[pos[0]][pos[1]].height <= 1) {
-                res.push([pos[0] + 1, pos[1]]);
+        if (pos.Y < this.map.length - 1) {
+            if (this.map[pos.Y + 1][pos.X].height - this.map[pos.Y][pos.X].height <= 1) {
+                res.push(geo.movedPosition(pos, { X: 0, Y: 1 }));
             }
         }
-        if (pos[1] > 0) {
-            if (this.map[pos[0]][pos[1] - 1].height - this.map[pos[0]][pos[1]].height <= 1) {
-                res.push([pos[0], pos[1] - 1]);
+        if (pos.X > 0) {
+            if (this.map[pos.Y][pos.X - 1].height - this.map[pos.Y][pos.X].height <= 1) {
+                res.push(geo.movedPosition(pos, { X: - 1, Y: 0 }));
             }
         }
-        if (pos[1] < this.map[0].length - 1) {
-            if (this.map[pos[0]][pos[1] + 1].height - this.map[pos[0]][pos[1]].height <= 1) {
-                res.push([pos[0], pos[1] + 1]);
+        if (pos.X < this.map[0].length - 1) {
+            if (this.map[pos.Y][pos.X + 1].height - this.map[pos.Y][pos.X].height <= 1) {
+                res.push(geo.movedPosition(pos, { X: 1, Y: 0 }));
             }
         }
 
@@ -161,8 +160,7 @@ console.log("#Lowpoints:   ", grid.lowpoints.length);
 aoc.printPartHeader(1, "Fewest steps path");
 
 const res1 = grid.findPath(grid.start);
-console.log("Result: ", res1);
-
+console.log("Result:   ", res1);
 
 // ----------------------------------------------------------------------------
 aoc.printPartHeader(2, "Fewest steps from best startpoint");
@@ -173,4 +171,4 @@ startPoints.push(grid.start);
 const paths2 = startPoints.map(sp => grid.findPath(sp)).filter(d => d > 0);
 // console.log("  Path lengths: ", paths2);
 const res2 = Math.min(...paths2);
-console.log("Result: ", res2);
+console.log("Result:   ", res2);
