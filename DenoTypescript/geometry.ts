@@ -32,7 +32,7 @@ export function areSectionsConnected(sec1: Section, sec2: Section): boolean {
     return sec1.overlaps(sec2) || isOneFullyContained(sec1, sec2);
 }
 
-function isOneFullyContained(sec1: Section, sec2: Section): boolean {
+export function isOneFullyContained(sec1: Section, sec2: Section): boolean {
     return sec1.fullyContains(sec2) || sec2.fullyContains(sec1);
 }
 

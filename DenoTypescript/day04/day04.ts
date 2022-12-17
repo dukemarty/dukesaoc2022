@@ -1,62 +1,42 @@
 import * as io from "../ioutility.ts";
 import * as aoc from "../aoc.ts";
-
-
-class Sections {
-    from: number
-    to: number
-
-    constructor(assignment: string){
-        const tokens = assignment.split("-");
-        this.from = parseInt(tokens[0]);
-        this.to = parseInt(tokens[1]);
-    }
-
-    fullyContains(other: Sections){
-        return other.from >= this.from && other.to <= this.to;
-    }
-
-    overlaps(other: Sections){
-        return this.contains(other.from) || this.contains(other.to);
-    }
-
-    private contains(section: number){
-        return this.from <= section && section <= this.to;
-    }
-}
+import * as geo from "../geometry.ts";
 
 class ElvesPair {
 
-    elves: Array<Sections>
+    elves: Array<geo.Section>
 
-    constructor(line: string){
-        this.elves = line.split(",").map( (t) => new Sections(t));
+    constructor(line: string) {
+        this.elves = line.split(",").map((t) => {
+            const tokens = t.split("-");
+            return new geo.Section(parseInt(tokens[0]), parseInt(tokens[1]));
+        });
     }
 
     isOneFullyContained(): boolean {
-        return this.elves[0].fullyContains(this.elves[1]) || this.elves[1].fullyContains(this.elves[0]);
+        return geo.isOneFullyContained(this.elves[0], this.elves[1]);
     }
 
     somehowOverlaps(): boolean {
-        return this.elves[0].overlaps(this.elves[1]) || this.isOneFullyContained();
+        return geo.areSectionsConnected(this.elves[0], this.elves[1]);
     }
 }
 
 const lines = io.readUniformFilledLines("Puzzle1.txt");
-const pairs = lines.map( (l) => new ElvesPair(l));
+const pairs = lines.map((l) => new ElvesPair(l));
 
 aoc.printDayHeader(4, "Camp Cleanup");
 
 // ----------------------------------------------------------------------------
 aoc.printPartHeader(1, "Number of fully overlapping pairs");
 
-const  containedPairs = pairs.filter( (p) => p.isOneFullyContained());
-console.log("Result: ", containedPairs.length);
+const containedPairs = pairs.filter((p) => p.isOneFullyContained());
+console.log("Result:  ", containedPairs.length);
 
 
 // ----------------------------------------------------------------------------
 aoc.printPartHeader(2, "Number of somehow overlapping pairs");
 
-const overlappingPairs = pairs.filter( (p) => p.somehowOverlaps());
-console.log("Result: ", overlappingPairs.length);
+const overlappingPairs = pairs.filter((p) => p.somehowOverlaps());
+console.log("Result:  ", overlappingPairs.length);
 

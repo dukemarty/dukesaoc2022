@@ -40,19 +40,11 @@ for (let i = 0; i < datastreams.length; ++i) {
 
 
 // ----------------------------------------------------------------------------
-aoc.printPartHeader(1, "End of first start message marker");
+aoc.printPartHeader(2, "End of first start message marker");
 
 for (let i = 0; i < datastreams.length; ++i) {
     // console.log("End state: ", state);
     const res2 = findFirstStartMarker(datastreams[i], 14);
     console.log(`Result 2 for stream ${i}: `, res2);
 }
-
-// // ----------------------------------------------------------------------------
-// aoc.printPartHeader(2, "Top crates after all moves (multiple crates)");
-
-// moves.perform2(state2);
-// // console.log("End state: ", state);
-// const res2 = state2.stacks.filter((s) => s.length > 0).map((s) => s[s.length - 1]).join("");
-// console.log("Result 2: ", res2);
 
