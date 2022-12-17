@@ -19,6 +19,7 @@ class PathFinder {
 
     start: Position
     destination: Position
+    lowpoints: Array<Position>
     map: Array<Array<StepInfo>>
 
     constructor(public grid: Array<string>) {
@@ -39,15 +40,27 @@ class PathFinder {
             this.map.push(nextArray);
         }
 
-        this.start = this.findPosition("S");
-        this.destination = this.findPosition("E");
-
-        this.map[this.start[0]][this.start[1]].state = 'SEEN';
-        this.map[this.start[0]][this.start[1]].dist = 0;
+        this.start = this.findPositions("S")[0];
+        this.destination = this.findPositions("E")[0];
+        this.lowpoints = this.findPositions("a");
     }
 
-    findPath(): number {
-        const unvisited = [this.start];
+    private resetMap() {
+        for (let r = 0; r < this.map.length; ++r) {
+            for (let c = 0; c < this.map[0].length; ++c) {
+                this.map[r][c].state = 'UNSEEN'
+                this.map[r][c].dist = 0;
+            }
+        }
+    }
+
+    findPath(start: Position): number {
+        this.resetMap();
+
+        this.map[start[0]][start[1]].state = 'SEEN';
+        this.map[start[0]][start[1]].dist = 0;
+
+        const unvisited = [start];
         while (unvisited.length > 0) {
             const nextPos = unvisited.splice(0, 1)[0];
             const pos = this.map[nextPos[0]][nextPos[1]];
@@ -91,16 +104,18 @@ class PathFinder {
         return this.map[p[0]][p[1]].dist! + (Math.abs(p[0] - this.destination[0]) + Math.abs(p[1] - this.destination[1]));
     }
 
-    private findPosition(char: string): Position {
+    private findPositions(char: string): Array<Position> {
+        const res = new Array<Position>();
+
         for (let r = 0; r < this.grid.length; ++r) {
             for (let c = 0; c < this.grid[0].length; ++c) {
                 if (this.grid[r][c] === char) {
-                    return [r, c];
+                    res.push([r, c]);
                 }
             }
         }
 
-        return [-1, -1];
+        return res;
     }
 
     private getValidNeighbours(pos: Position): Array<Position> {
@@ -139,35 +154,23 @@ aoc.printDayHeader(12, "Hill Climbing Algorithm");
 const grid = new PathFinder(io.readUniformFilledLines("Puzzle.txt"));
 console.log("Start:       ", grid.start);
 console.log("Destination: ", grid.destination);
+console.log("#Lowpoints:   ", grid.lowpoints.length);
 
 
 // ----------------------------------------------------------------------------
 aoc.printPartHeader(1, "Fewest steps path");
 
-const path1 = grid.findPath();
-console.log(path1);
-// console.log(grid.map);
-const res1 = 0;
+const res1 = grid.findPath(grid.start);
 console.log("Result: ", res1);
 
 
-// // ----------------------------------------------------------------------------
-// aoc.printPartHeader(2, "Monkey business after 10000 rounds");
+// ----------------------------------------------------------------------------
+aoc.printPartHeader(2, "Fewest steps from best startpoint");
 
-// const correctionFactor = monkeys.map((m) => m.testValue).reduce((acc, curr) => acc * curr, 1);
-// monkeys.forEach((m) => m.reset());
-// for (let round = 0; round < 10000; ++round) {
-//     for (let i = 0; i < monkeys.length; ++i) {
-//         const throws = monkeys[i].inspectAllPart2(correctionFactor);
-//         throws.forEach((t) => {
-//             monkeys[t.targetMonkey].items.push(t.item)
-//         })
-//     }
-//     // monkeys.forEach((m) => m.printItems());
-// }
-// monkeys.forEach((m) => m.printInspections());
+const startPoints = Array.from(grid.lowpoints);
+startPoints.push(grid.start);
 
-// const sortedInspectionCounts2 = monkeys.map((m) => m.inspectionCount).toSorted((l, r) => r - l);
-// const res2 = sortedInspectionCounts2[0] * sortedInspectionCounts2[1];
-// console.log("Result: ", res2);
-
+const paths2 = startPoints.map(sp => grid.findPath(sp)).filter(d => d > 0);
+// console.log("  Path lengths: ", paths2);
+const res2 = Math.min(...paths2);
+console.log("Result: ", res2);
