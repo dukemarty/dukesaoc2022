@@ -3,8 +3,6 @@ import * as io from "../ioutility.ts";
 import * as geo from "../geometry.ts";
 
 
-// type Range = { From: number, To: number } | undefined;
-
 
 class SensorBeaconPair {
 
@@ -78,7 +76,7 @@ for (let y = boxForBeacon.MinY; y < boxForBeacon.MaxY; ++y) {
             checkSection.remove(merged[i]);
         }
     }
-    if (checkSection.From!=checkSection.To){
+    if (checkSection.From != checkSection.To) {
         console.log("ERROR: more than one candidate found!");
     }
     pos = { Y: y, X: checkSection.From };
