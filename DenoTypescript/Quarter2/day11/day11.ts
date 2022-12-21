@@ -1,15 +1,6 @@
-import * as aoc from "../aoc.ts";
-import * as io from "../ioutility.ts";
-
-
-type UpdateOp = (l: number, r: number) => number;
-
-const operations = new Map<string, UpdateOp>([
-    ["+", (l: number, r: number) => l + r],
-    ["-", (l: number, r: number) => l - r],
-    ["*", (l: number, r: number) => l * r],
-    ["/", (l: number, r: number) => l / r]
-]);
+import * as aoc from "../../aoc.ts";
+import * as io from "../../ioutility.ts";
+import * as util from "../../utility.ts";
 
 interface IArgument {
     getValue: (old: number) => number;
@@ -49,14 +40,14 @@ function parseArgument(argRaw: string): IArgument {
 
 class UpdateOperation {
 
-    op: UpdateOp
+    op: util.SimpleArithmeticOperation;
     arg1: IArgument
     arg2: IArgument
 
     constructor(operationCode: string) {
         // console.log(operationCode);
         const opMatch = new RegExp("^(?<arg1>.*)\\s+(?<op>\\S)\\s+(?<arg2>.*)$", "g").exec(operationCode);
-        this.op = operations.get(opMatch!.groups!["op"].trim())!;
+        this.op = util.ArithmeticOperations.get(opMatch!.groups!["op"].trim())!;
         this.arg1 = parseArgument(opMatch!.groups!["arg1"].trim());
         this.arg2 = parseArgument(opMatch!.groups!["arg2"].trim());
     }
@@ -165,11 +156,12 @@ for (let round = 0; round < 20; ++round) {
     }
     // monkeys.forEach((m) => m.printItems());
 }
-monkeys.forEach((m) => m.printInspections());
+// monkeys.forEach((m) => m.printInspections());
 
 const sortedInspectionCounts1 = monkeys.map((m) => m.inspectionCount).toSorted((l, r) => r - l);
 const res1 = sortedInspectionCounts1[0] * sortedInspectionCounts1[1];
-console.log("Result: ", res1);
+console.log("Result:   ", res1);
+// console.log("Original: ", 100345);
 
 
 // ----------------------------------------------------------------------------
@@ -186,9 +178,10 @@ for (let round = 0; round < 10000; ++round) {
     }
     // monkeys.forEach((m) => m.printItems());
 }
-monkeys.forEach((m) => m.printInspections());
+// monkeys.forEach((m) => m.printInspections());
 
 const sortedInspectionCounts2 = monkeys.map((m) => m.inspectionCount).toSorted((l, r) => r - l);
 const res2 = sortedInspectionCounts2[0] * sortedInspectionCounts2[1];
-console.log("Result: ", res2);
+console.log("Result:   ", res2);
+// console.log("Original: ", 28537348205);
 
