@@ -31,9 +31,33 @@ function copyMatrix(m: Array<Array<number>>): Array<Array<number>> {
 class Graph {
 
     size: number
+    shortAdjMatrix: Array<Array<number>>
 
     constructor(public adjMatrix: Array<Array<number>>) {
         this.size = adjMatrix.length;
+
+        this.shortAdjMatrix = new Array<Array<number>>();
+        for (let r = 0; r < this.size; ++r) {
+            const nextRow = new Array<number>();
+            for (let c = 0; c < this.size; ++c) {
+                if (this.adjMatrix[r][c] == 1) {
+                    nextRow.push(1);
+                } else {
+                    nextRow.push(Number.MAX_VALUE);
+                }
+            }
+            this.shortAdjMatrix.push(nextRow);
+        }
+    }
+
+    // implementation of Floyd algorithm
+    // -> https://www.inf.hs-flensburg.de/lang/algorithmen/graph/warshall.htm#:~:text=Der%20Graph%20G%20%2B%20hei%C3%9Ft%20transitive,von%203%20nach%201%20gibt.
+    calcShortestPaths() {
+        for (let k = 0; k < this.size; k++)
+            for (let i = 0; i < this.size; i++)
+                for (let j = 0; j < this.size; j++)
+                    this.shortAdjMatrix[i][j] = Math.min(this.shortAdjMatrix[i][j], this.shortAdjMatrix[i][k] + this.shortAdjMatrix[k][j])
+        // console.log(this.shortAdjMatrix);
     }
 
     flattenOutNode(nodeIndex: number) {
@@ -81,7 +105,11 @@ class Network {
         return adjMatrix;
     }
 
-    simplify(removals: Array<string>) {
+    simplify() {
+        this.graph.calcShortestPaths();
+    }
+
+    simplifyOLD(removals: Array<string>) {
         removals.forEach(r => {
             this.graph.flattenOutNode(this.nameToIndex.get(r)!);
         });
@@ -91,13 +119,15 @@ class Network {
         let maxRelease = 0;
         const states = new Array<SearchState>();
 
-        const initialState = new SearchState("AA", this.graph.adjMatrix, initialValveRates, 0, 0);
+        const initialState = new SearchState("AA", this.graph.shortAdjMatrix, initialValveRates, 0, 0);
         states.push(initialState);
 
         while (states.length > 0) {
             const nextState = states.shift()!;
-            console.log(`Evaluating in ${nextState.pos} at t=${nextState.time}`);
-            if (nextState.time >= 29) {
+            // console.log(`Evaluating in ${nextState.pos} at t=${nextState.time}: ${nextState.accumulatedRelease}`);
+            // console.log(nextState);
+            if (states.length % 100 == 0) { console.log(states.length); }
+            if (nextState.time >= 29 || Array.from(nextState.valveRates.values()).reduce((acc, curr) => acc + curr, 0) == 0) {
                 if (nextState.accumulatedRelease > maxRelease) {
                     maxRelease = nextState!.accumulatedRelease;
                     console.log("New max release: ", maxRelease);
@@ -116,18 +146,14 @@ class Network {
 
         const posIndex = this.nameToIndex.get(state.pos)!;
         for (let i = 0; i < this.graph.size; ++i) {
-            if (state.graph.adjMatrix[posIndex][i] != 0) {
-                if (state.valveRates.get(state.pos)! > 0) {
-                    const newAdjMatrix = copyMatrix(state.graph.adjMatrix);
-                    const newValveRates = new Map(state.valveRates);
-                    newValveRates.set(state.pos, 0);
-                    const newAccumulatedRelease = state.accumulatedRelease + (30 - state.time - 1) * state.valveRates.get(state.pos)!;
-                    const firstReleaseState = new SearchState(this.indexToName[i], newAdjMatrix, newValveRates, state.time + 1 + state.graph.adjMatrix[posIndex][i], newAccumulatedRelease);
-                    firstReleaseState.graph.flattenOutNode(posIndex);
-                    res.push(firstReleaseState);
-                }
-                const gotoState = new SearchState(this.indexToName[i], state.graph.adjMatrix, state.valveRates, state.time + state.graph.adjMatrix[posIndex][i], state.accumulatedRelease);
-                res.push(gotoState);
+            const newPos = this.indexToName[i];
+            if (state.valveRates.get(newPos)! > 0) {
+                const newValveRates = new Map(state.valveRates);
+                newValveRates.set(newPos, 0);
+                const newTime = state.time + 1 + state.adjMatrix[posIndex][i];
+                const newAccumulatedRelease = state.accumulatedRelease + (30 - newTime) * state.valveRates.get(newPos)!;
+                const firstReleaseState = new SearchState(newPos, state.adjMatrix, newValveRates, newTime, newAccumulatedRelease);
+                res.push(firstReleaseState);
             }
         }
 
@@ -138,10 +164,8 @@ class Network {
 // Object.assign([], myArray);
 
 class SearchState {
-    graph: Graph
 
-    constructor(public pos: string, adjMatrix: Array<Array<number>>, public valveRates: Map<string, number>, public time: number, public accumulatedRelease: number) {
-        this.graph = new Graph(adjMatrix);
+    constructor(public pos: string, public adjMatrix: Array<Array<number>>, public valveRates: Map<string, number>, public time: number, public accumulatedRelease: number) {
     }
 }
 
@@ -165,9 +189,8 @@ class Cave {
             connections.set(v.name, v.tunnelsTo);
         })
         const res = new Network(connections, 1);
-        console.log(res.graph);
-        res.simplify(valves.filter(v => v.name != "AA" && v.rate == 0).map(v => v.name));
-        console.log("-------------------------");
+        // res.simplify(valves.filter(v => v.name != "AA" && v.rate == 0).map(v => v.name));
+        res.simplify();
         console.log(res.graph);
 
         return res;
@@ -178,7 +201,7 @@ class Cave {
 
 aoc.printDayHeader(16, "Proboscidea Volcanium");
 
-const scanOutput = io.readUniformFilledLines("Sample.txt");
+const scanOutput = io.readUniformFilledLines("Puzzle.txt");
 const allValves = scanOutput.map(l => new Valve(l));
 allValves[0].isStart = true;
 // console.log(allValves);
@@ -188,8 +211,9 @@ allValves[0].isStart = true;
 aoc.printPartHeader(1, "Maximum pressure release");
 
 const cave = new Cave(allValves);
-console.log(cave);
+// console.log(cave);
 const res1 = cave.findMaximumRelease();
+// const res1 = 0;
 console.log("Result: ", res1);
 
 
