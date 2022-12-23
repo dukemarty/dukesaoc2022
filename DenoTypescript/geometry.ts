@@ -7,6 +7,18 @@ export function parsePosition(line: string, sep = ",") {
 
 }
 
+export type Orientation = 0 | 1 | 2 | 3;
+
+export type Pose = { pos: Position, dir: Orientation };
+
+export type Position3D = { X: number, Y: number, Z: number };
+
+export function parsePosition3D(line: string, sep = ",") {
+    const tokens = line.split(sep);
+    return { X: parseInt(tokens[0].trim()), Y: parseInt(tokens[1].trim()), Z: parseInt(tokens[2].trim()) };
+}
+
+
 export type Vector = { X: number, Y: number };
 
 export function getVector(from: Position, to: Position) {
@@ -28,6 +40,8 @@ export function movedPosition(pos: Position, v: Vector) {
 }
 
 export type BoundingBox = { MinX: number, MaxX: number, MinY: number, MaxY: number };
+
+export type BoundingBox3D = { MinX: number, MinY: number, MinZ: number, MaxX: number, MaxY: number, MaxZ: number };
 
 export function mergeBoundingBoxes(boxes: Array<BoundingBox>): BoundingBox {
     return {
