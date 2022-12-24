@@ -7,6 +7,11 @@ export function parsePosition(line: string, sep = ",") {
 
 }
 
+export function positionEquals(l: Position, r: Position) {
+    return l.X == r.X && l.Y == r.Y;
+}
+
+// default: 0=right, 1=down, 2=left, 3=up
 export type Orientation = 0 | 1 | 2 | 3;
 
 export type Pose = { pos: Position, dir: Orientation };

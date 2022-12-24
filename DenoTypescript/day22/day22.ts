@@ -105,7 +105,9 @@ class Cube {
     constructor(public map: Array<string>) {
         this.boundingBox = { MinX: 0, MinY: 0, MaxY: map.length, MaxX: Math.max(...map.map(r => r.length)) };
         this.pose = this.findStartpoint();
+        console.log("Map sizes: ", map.length, map[0].length);
         this.faceSize = map.length / 3;
+        console.log(a[-3.2]);
         ({ X: this.xBounds, Y: this.yBounds } = this.findBoundaries());
     }
 
@@ -117,44 +119,103 @@ class Cube {
     }
 
     private applyCommand(cmd: Command) {
-        // console.log("Apply cmd: ", cmd);
+        console.log("Apply cmd: ", cmd);
         switch (cmd.type) {
             case "MOVE": {
                 for (let i = 0; i < cmd.count; ++i) {
-                    const nextPos = geo.movedPosition(this.pose.pos, Board.moves[this.pose.dir]);
-                    this.correctPos(nextPos, this.pose.dir);
-                    // console.log("Corrected Pose: ", nextPos);
-                    if (this.map[nextPos.Y][nextPos.X] == ".") {
-                        this.pose.pos = nextPos;
+                    const nextPose = { pos: geo.movedPosition(this.pose.pos, Board.moves[this.pose.dir]), dir: this.pose.dir };
+                    this.correctPose(nextPose);
+                    console.log("  Corrected Pose: ", nextPose);
+                    if (this.map[nextPose.pos.Y][nextPose.pos.X] == ".") {
+                        this.pose = nextPose;
                     }
                 }
                 break;
             }
             case "ROT": {
-                this.pose.dir = ((this.pose.dir + (cmd.dir == "L" ? -1 : +1) + 4) % 4) as geo.Orientation;
+                this.performRotation(cmd.dir);
                 break;
             }
         }
     }
 
-    private correctPos(pos: geo.Position, dir: geo.Orientation) {
-        const xb = this.xBounds[pos.Y];
-        const yb = this.yBounds[pos.X];
-        // console.log("Bounds for pos ", pos, ":  ", xb, yb);
-        if (dir == 0 || dir == 2) {
-            if (pos.X < xb.From) {
-                pos.X = xb.To;
-            }
-            if (pos.X > xb.To) {
-                pos.X = xb.From;
+    private correctPose(pose: geo.Pose) {
+        const xb = this.xBounds[pose.pos.Y];
+        const yb = this.yBounds[pose.pos.X];
+        if (pose.dir == 0 && pose.pos.X > xb.To) {
+            if (pose.pos.Y < this.faceSize) { // left 1 -> 6
+                pose.dir = 2;
+                pose.pos.Y = 3 * this.faceSize - pose.pos.Y - 1;
+                pose.pos.X = 4 * this.faceSize - 1;
+            } else if (pose.pos.Y < 2 * this.faceSize) { // left 4 -> 6
+                console.log("    left 4 -> 6");
+                pose.dir = 1;
+                pose.pos.X = 4 * this.faceSize - (pose.pos.Y - this.faceSize) - 1;
+                pose.pos.Y = 2 * this.faceSize;
+            } else { // left 6 -> 1
+                pose.dir = 2;
+                pose.pos.Y = this.faceSize - (pose.pos.Y - 2 * this.faceSize) - 1;
+                pose.pos.X = 3 * this.faceSize - 1;
             }
         }
-        if (dir == 1 || dir == 3) {
-            if (pos.Y < yb.From) {
-                pos.Y = yb.To;
+        if (pose.dir == 2 && pose.pos.X < xb.From) {
+            if (pose.pos.Y < this.faceSize) { // left 1 -> 3
+                pose.dir = 1;
+                pose.pos.X = this.faceSize + pose.pos.Y;
+                pose.pos.Y = this.faceSize;
+            } else if (pose.pos.Y < 2 * this.faceSize) { // left 2 -> 6
+                pose.dir = 3;
+                pose.pos.X = 3 * this.faceSize + (pose.pos.Y - this.faceSize);
+                pose.pos.Y = 3 * this.faceSize - 1;
+            } else { // left 5 -> 3
+                pose.dir = 3;
+                pose.pos.X = 2 * this.faceSize - (pose.pos.Y - 2 * this.faceSize) - 1;
+                pose.pos.Y = 2 * this.faceSize - 1;
             }
-            if (pos.Y > yb.To) {
-                pos.Y = yb.From;
+        }
+        if (pose.dir == 1 && pose.pos.Y > yb.To) {
+            if (pose.pos.X < this.faceSize) { // left 2 -> 5
+                pose.dir = 3;
+                pose.pos.X = 3 * this.faceSize - pose.pos.X - 1;
+                pose.pos.Y = 3 * this.faceSize - 1;
+            } else if (pose.pos.X < 2 * this.faceSize) { // left 3 -> 5
+                console.log("left 3 -> 5");
+                pose.dir = 0;
+                pose.pos.Y = 3 * this.faceSize - (pose.pos.X - this.faceSize) - 1;
+                pose.pos.X = 2 * this.faceSize;
+            } else if (pose.pos.X < 3 * this.faceSize) { // left 5 -> 2
+                console.log("left 5 -> 2");
+                pose.dir = 3;
+                pose.pos.X = this.faceSize - (pose.pos.X - 2 * this.faceSize) - 1;
+                pose.pos.Y = 2 * this.faceSize - 1;
+            } else { // left 6 -> 2
+                pose.dir = 0;
+                pose.pos.Y = this.faceSize + (this.faceSize - (pose.pos.X - 3 * this.faceSize));
+                pose.pos.X = 3 * this.faceSize - 1;
+            }
+        }
+        if (pose.dir == 3 && pose.pos.Y < yb.From) {
+            if (pose.pos.X < this.faceSize) { // left 2 -> 1
+                console.log("left 2 -> 1");
+                pose.dir = 1;
+                pose.pos.X = 2 * this.faceSize + (this.faceSize - pose.pos.X);
+                pose.pos.Y = 0;
+            } else if (pose.pos.X < 2 * this.faceSize) { // left 3 -> 1
+                console.log("left 3 -> 1");
+                console.log("    ", pose, this.faceSize);
+                pose.dir = 0;
+                pose.pos.Y = pose.pos.X - this.faceSize;
+                pose.pos.X = 2 * this.faceSize;
+            } else if (pose.pos.X < 3 * this.faceSize) { // left 1 -> 2
+                console.log("left 1 -> 2");
+                pose.dir = 1;
+                pose.pos.X = this.faceSize - (pose.pos.X - 2 * this.faceSize);
+                pose.pos.Y = this.faceSize;
+            } else { // left 6 -> 4
+                console.log("left 6 -> 4");
+                pose.dir = 2;
+                pose.pos.Y = this.faceSize + (this.faceSize - (pose.pos.X - 3 * this.faceSize));
+                pose.pos.X = 3 * this.faceSize - 1;
             }
         }
     }
@@ -180,6 +241,10 @@ class Cube {
         const startCol = this.map[0].search(/\./);
         console.log("Start columns: ", startCol);
         return { pos: { X: startCol, Y: 0 }, dir: 0 };
+    }
+
+    private performRotation(dir: string) {
+        this.pose.dir = ((this.pose.dir + (dir == "L" ? -1 : +1) + 4) % 4) as geo.Orientation;
     }
 }
 
@@ -213,7 +278,7 @@ class Path {
 
 aoc.printDayHeader(22, "Monkey Map");
 
-const data = io.readEmptyLineSeparatedBlocks("Sample.txt");
+const data = io.readEmptyLineSeparatedBlocks("Puzzle.txt");
 const path = new Path(data[1][0]);
 // console.log(path);
 
