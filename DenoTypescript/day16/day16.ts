@@ -118,7 +118,7 @@ class Network {
         // // let sumTimeState = 0
         // // let sumTimeShort = 0
 
-        const initialState = new SearchState("AA", this.graph.shortAdjMatrix, initialValveRates, 0, 0);
+        const initialState = new SearchState("AA", this.nameToIndex.get("AA")!, this.nameToIndex, this.graph.shortAdjMatrix, initialValveRates, 0, 0);
         states.push(initialState);
 
         let noImprovementOfMaxReleaseCount = 0;
@@ -316,7 +316,7 @@ class Network {
                 } else {
                     newAccumulatedRelease = state.accumulatedRelease + (30 - newTime) * state.valveRates.get(newPos)!;
                 }
-                const firstReleaseState = new SearchState(newPos, state.adjMatrix, newValveRates, newTime, newAccumulatedRelease);
+                const firstReleaseState = new SearchState(newPos, i, this.nameToIndex, state.adjMatrix, newValveRates, newTime, newAccumulatedRelease);
                 res.push(firstReleaseState);
             }
         }
@@ -395,14 +395,16 @@ class SearchState {
     //     // this.heuristic = this.accumulatedRelease + (29 - time) * Math.min(...valveRates.values());
     // }
 
-    constructor(public pos: string, public adjMatrix: Array<Array<number>>, public valveRates: Map<string, number>, public time: number, public accumulatedRelease: number) {
+    constructor(public pos: string, selfIndex: number, nameToIndex: Map<string, number>, public adjMatrix: Array<Array<number>>, public valveRates: Map<string, number>, public time: number, public accumulatedRelease: number) {
         // const avgValue = Array.from(valveRates.values()).reduce((acc, curr) => acc + curr, 0) / valveRates.size;
         const bestRates = Array.from(valveRates.values()).toSorted((a, b) => b - a);
         // console.log("  best rates: ", bestRates);
         let remainingTime = 30 - time;
         // console.log("  time / remaining time: ", time, remainingTime);
         let expectedAdditionalRelease = 0;
-        for (remainingTime -= 2; remainingTime > 0; remainingTime -= 2) {
+        const remainingTargets = Array.from(valveRates.keys()).filter(k => valveRates.get(k)! > 0);
+        let timeStep = Math.min(...remainingTargets.map(k => adjMatrix[selfIndex][nameToIndex.get(k)!]).filter(d => d > 0));
+        for (remainingTime -= timeStep, timeStep = 2; remainingTime > 0; remainingTime -= timeStep) {
             const nextRate = bestRates.shift();
             expectedAdditionalRelease += nextRate! * remainingTime;
         }
