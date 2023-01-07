@@ -112,7 +112,11 @@ class Network {
     searchMaxRelease(initialValveRates: Map<string, number>, time: number) {
         let maxRelease = 0;
         const states = new Array<SearchState>();
-        const processed = new Array<SearchState>();
+        // // const processed = new Array<SearchState>();
+        // // const processedKeys = new Set<string>();
+        const processedShorts = new Map<string, ShortSingleState>();
+        // // let sumTimeState = 0
+        // // let sumTimeShort = 0
 
         const initialState = new SearchState("AA", this.graph.shortAdjMatrix, initialValveRates, 0, 0);
         states.push(initialState);
@@ -126,8 +130,8 @@ class Network {
             // console.log(`eval. ${nextState.accumulatedRelease}/${nextState.heuristic} vs. best: ${maxRelease}`);
             // if ((nextState.accumulatedRelease + 10 > maxRelease) && (nextState.heuristic + 10 < maxRelease)) {
             if (nextState.heuristic + 10 < maxRelease) {
-                console.log("Found stop condition:");
-                console.log(`    eval. ${nextState.accumulatedRelease}/${nextState.heuristic} vs. best: ${maxRelease}`);
+                // console.log("Found stop condition:");
+                // console.log(`    eval. ${nextState.accumulatedRelease}/${nextState.heuristic} vs. best: ${maxRelease}`);
                 continue;
             }
             // console.log(`Evaluating in ${nextState.pos} at t=${nextState.time}: ${nextState.accumulatedRelease}`);
@@ -158,11 +162,116 @@ class Network {
                     const eqRates = rateNamesToCheck.map(name => stateToCheck.valveRates.get(name) == s.valveRates.get(name)).reduce((acc, curr) => acc && curr, true);
                     return eqPos && eqTime && eqRates;
                 });
-                const procEqState = processed.find((s, idx) => {
-                    const eqPos = stateToCheck.pos == s.pos;
-                    const eqTime = stateToCheck.time == s.time;
+                // // let t1 = performance.now();
+                // // const procEqState = processed.find((s, idx) => {
+                // //     const eqPos = stateToCheck.pos == s.pos;
+                // //     const eqTime = stateToCheck.time == s.time;
+                // //     const eqRates = rateNamesToCheck.map(name => stateToCheck.valveRates.get(name) == s.valveRates.get(name)).reduce((acc, curr) => acc && curr, true);
+                // //     return eqPos && eqTime && eqRates;
+                // // });
+                // // let t2 = performance.now();
+                // // sumTimeState += t2 - t1;
+                // // t1 = performance.now();
+                // // const procEqState2 = processed2.has(new ShortSingleState(stateToCheck).val);
+                // // t2 = performance.now();
+                // // sumTimeShort += t2 - t1;
+                if (eqState == undefined) {
+                    const short = new ShortSingleState(stateToCheck);
+                    const valToCheck = new ShortSingleState(stateToCheck).val;
+                    const procEqState = processedShorts.has(short.val);
+                    // if (procEqState == undefined) {
+                    if (!procEqState) {
+                        newStates.push(stateToCheck);
+                        processedShorts.set(short.val, short);
+
+                    } else {
+                        const procEqShortState = processedShorts.get(valToCheck)!;
+                        // if (stateToCheck.accumulatedRelease > procEqState.accumulatedRelease) {
+                        if (stateToCheck.accumulatedRelease > procEqShortState.accumulatedRelease) {
+                            newStates.push(stateToCheck);
+                            processedShorts.set(short.val, short);
+                        } else {
+                            console.log("Already processed better version of state");
+                        }
+                    }
+                } else {
+                    if (stateToCheck.accumulatedRelease > eqState.accumulatedRelease) {
+                        eqState.accumulatedRelease = stateToCheck.accumulatedRelease;
+                        eqState.heuristic = stateToCheck.heuristic;
+                        // console.log("Improved state");
+                    } else {
+                        // console.log("skipped worse state");
+                    }
+                }
+            }
+            states.push(...newStates);
+            // // processed.push(nextState);
+            // // processed2.add(new ShortSingleState(nextState).val);
+            // // processedKeys.add(short.val);
+            // const short = new ShortSingleState(nextState);
+            // processedShorts.set(short.val, short);
+        }
+
+        // // console.log("Time for full states processed: ", sumTimeState);
+        // // console.log("Time for short states processed: ", sumTimeShort);
+
+        return maxRelease;
+    }
+
+    searchMaxReleaseByPair(initialValveRates: Map<string, number>, time: number): number {
+        let maxRelease = 0;
+        const states = new Array<SearchPairState>();
+        const processed = new Array<SearchPairState>();
+
+        const initialState = new SearchPairState("AA", "AA", this.graph.shortAdjMatrix, initialValveRates, 0, 0, 0, time);
+        states.push(initialState);
+
+        let noImprovementOfMaxReleaseCount = 0;
+        while (states.length > 0) { // && noImprovementOfMaxReleaseCount < 100000) {
+            states.sort((a, b) => b.heuristic - a.heuristic);
+            // states.forEach(s => console.log("Heur: ", s.heuristic));
+            // console.log("------------------");
+            const nextState = states.shift()!;
+            // console.log(`eval. ${nextState.accumulatedRelease}/${nextState.heuristic} vs. best: ${maxRelease}`);
+            // if ((nextState.accumulatedRelease + 10 > maxRelease) && (nextState.heuristic + 10 < maxRelease)) {
+            if (nextState.heuristic + 10 < maxRelease) {
+                // console.log("Found stop condition:");
+                // console.log(`    eval. ${nextState.accumulatedRelease}/${nextState.heuristic} vs. best: ${maxRelease}`);
+                continue;
+            }
+            // console.log(`Evaluating in ${nextState.pos} at t=${nextState.time}: ${nextState.accumulatedRelease}`);
+            // console.log(nextState);
+            if (states.length % 20 == 0) {
+                // console.log(states.length);
+                console.log(`  eval. ${nextState.accumulatedRelease}/${nextState.heuristic} vs. best: ${maxRelease}`);
+            }
+            if ((nextState.time1 >= time && nextState.time2 >= time) || Math.max(...nextState.valveRates.values()) == 0) {
+                if (nextState.accumulatedRelease > maxRelease) {
+                    maxRelease = nextState!.accumulatedRelease;
+                    console.log("New max release: ", maxRelease);
+                    noImprovementOfMaxReleaseCount = 0;
+                } else {
+                    ++noImprovementOfMaxReleaseCount;
+                }
+                continue;
+            }
+
+            const expansion = this.expandPair(nextState, time);
+            const newStates = new Array<SearchPairState>();
+            for (let i = 0; i < expansion.length; ++i) {
+                const stateToCheck = expansion[i];
+                const rateNamesToCheck = Array.from(stateToCheck.valveRates.keys());
+                const eqState = states.find((s, idx) => {
+                    const eq11and22 = stateToCheck.pos1 == s.pos1 && stateToCheck.time1 == s.time1 && stateToCheck.pos2 == s.pos2 && stateToCheck.time2 == s.time2
+                    const eq12and21 = stateToCheck.pos1 == s.pos2 && stateToCheck.time1 == s.time2 && stateToCheck.pos2 == s.pos1 && stateToCheck.time2 == s.time1
                     const eqRates = rateNamesToCheck.map(name => stateToCheck.valveRates.get(name) == s.valveRates.get(name)).reduce((acc, curr) => acc && curr, true);
-                    return eqPos && eqTime && eqRates;
+                    return (eq11and22 || eq12and21) && eqRates;
+                });
+                const procEqState = processed.find((s, idx) => {
+                    const eq11and22 = stateToCheck.pos1 == s.pos1 && stateToCheck.time1 == s.time1 && stateToCheck.pos2 == s.pos2 && stateToCheck.time2 == s.time2
+                    const eq12and21 = stateToCheck.pos1 == s.pos2 && stateToCheck.time1 == s.time2 && stateToCheck.pos2 == s.pos1 && stateToCheck.time2 == s.time1
+                    const eqRates = rateNamesToCheck.map(name => stateToCheck.valveRates.get(name) == s.valveRates.get(name)).reduce((acc, curr) => acc && curr, true);
+                    return (eq11and22 || eq12and21) && eqRates;
                 });
                 if (eqState == undefined) {
                     if (procEqState == undefined) {
@@ -214,9 +323,63 @@ class Network {
 
         return res;
     }
+
+    expandPair(state: SearchPairState, maxTime: number): Array<SearchPairState> {
+        const res = new Array<SearchPairState>();
+
+        if (state.time2 < state.time1) {
+            const posIndex = this.nameToIndex.get(state.pos2)!;
+            for (let i = 0; i < this.graph.size; ++i) {
+                const newPos = this.indexToName[i];
+                if (state.valveRates.get(newPos)! > 0) {
+                    const newValveRates = new Map(state.valveRates);
+                    newValveRates.set(newPos, 0);
+                    const newTime = state.time2 + 1 + state.adjMatrix[posIndex][i];
+                    let newAccumulatedRelease: number;
+                    if (newTime > maxTime) {
+                        newAccumulatedRelease = state.accumulatedRelease;
+                    } else {
+                        newAccumulatedRelease = state.accumulatedRelease + (maxTime - newTime) * state.valveRates.get(newPos)!;
+                    }
+                    const firstReleaseState = new SearchPairState(state.pos1, newPos, state.adjMatrix, newValveRates, state.time1, newTime, newAccumulatedRelease, maxTime);
+                    res.push(firstReleaseState);
+                }
+            }
+        } else {
+            const posIndex = this.nameToIndex.get(state.pos1)!;
+            for (let i = 0; i < this.graph.size; ++i) {
+                const newPos = this.indexToName[i];
+                if (state.valveRates.get(newPos)! > 0) {
+                    const newValveRates = new Map(state.valveRates);
+                    newValveRates.set(newPos, 0);
+                    const newTime = state.time1 + 1 + state.adjMatrix[posIndex][i];
+                    let newAccumulatedRelease: number;
+                    if (newTime > maxTime) {
+                        newAccumulatedRelease = state.accumulatedRelease;
+                    } else {
+                        newAccumulatedRelease = state.accumulatedRelease + (maxTime - newTime) * state.valveRates.get(newPos)!;
+                    }
+                    const firstReleaseState = new SearchPairState(newPos, state.pos2, state.adjMatrix, newValveRates, newTime, state.time2, newAccumulatedRelease, maxTime);
+                    res.push(firstReleaseState);
+                }
+            }
+        }
+
+        return res;
+    }
 }
 
 // Object.assign([], myArray);
+
+class ShortSingleState {
+    val: string
+    accumulatedRelease: number
+
+    constructor(orig: SearchState) {
+        this.val = orig.pos + orig.time + Array.from(orig.valveRates.keys()).toSorted().map(k => orig.valveRates.get(k)).join("");
+        this.accumulatedRelease = orig.accumulatedRelease;
+    }
+}
 
 class SearchState {
 
@@ -249,6 +412,50 @@ class SearchState {
     }
 }
 
+class SearchPairState {
+
+    heuristic: number
+
+    constructor(public pos1: string, public pos2: string, public adjMatrix: Array<Array<number>>, public valveRates: Map<string, number>, public time1: number, public time2: number, public accumulatedRelease: number, maxTime: number) {
+        // const avgValue = Array.from(valveRates.values()).reduce((acc, curr) => acc + curr, 0) / valveRates.size;
+        const bestRates = Array.from(valveRates.values()).toSorted((a, b) => b - a);
+        // console.log("  best rates: ", bestRates);
+        let remainingTime1 = maxTime - time1;
+        let remainingTime2 = maxTime - time2;
+        // console.log("  time / remaining time: ", time, remainingTime);
+        let expectedAdditionalRelease = 0;
+        while (remainingTime1 > 0 || remainingTime2 > 0) {
+            const nextRate = bestRates.shift();
+            if (nextRate == undefined) {
+                break;
+            }
+
+            if (remainingTime2 > remainingTime1) {
+                remainingTime2 -= 2;
+                expectedAdditionalRelease += nextRate * remainingTime2;
+            } else {
+                remainingTime1 -= 2;
+                expectedAdditionalRelease += nextRate * remainingTime1;
+            }
+        }
+        // for (remainingTime -= 2; remainingTime > 0; remainingTime -= 2) {
+        //     const nextRate1 = bestRates.shift();
+        //     if (nextRate1 == undefined) {
+        //         break;
+        //     }
+        //     expectedAdditionalRelease += nextRate1 * remainingTime;
+        //     const nextRate2 = bestRates.shift();
+        //     if (nextRate2 == undefined) {
+        //         break;
+        //     }
+        //     expectedAdditionalRelease += nextRate2 * remainingTime;
+        // }
+        // console.log("   g: ", expectedAdditionalRelease);
+        this.heuristic = this.accumulatedRelease + expectedAdditionalRelease;
+        // this.heuristic = this.accumulatedRelease + (29 - time) * Math.min(...valveRates.values());
+    }
+}
+
 class Cave {
     net: Network
 
@@ -263,6 +470,13 @@ class Cave {
         return res;
     }
 
+    findMaximumReleaseForPair(): number {
+        const initialValveRates = new Map<string, number>();
+        this.valves.forEach(v => initialValveRates.set(v.name, v.rate));
+        const res = this.net.searchMaxReleaseByPair(initialValveRates, 26);
+        return res;
+    }
+
     private createNetwork(valves: Array<Valve>): Network {
         const connections = new Map<string, Array<string>>();
         valves.forEach(v => {
@@ -271,7 +485,7 @@ class Cave {
         const res = new Network(connections, 1);
         // res.simplify(valves.filter(v => v.name != "AA" && v.rate == 0).map(v => v.name));
         res.simplify();
-        console.log(res.graph);
+        // console.log(res.graph);
 
         return res;
     }
@@ -290,15 +504,17 @@ allValves[0].isStart = true;
 // ----------------------------------------------------------------------------
 aoc.printPartHeader(1, "Maximum pressure release");
 
-const cave = new Cave(allValves);
-// console.log(cave);
-const res1 = cave.findMaximumRelease();
+const cave1 = new Cave(allValves);
+// console.log(cave1);
+const res1 = cave1.findMaximumRelease();
 // const res1 = 0;
 console.log("Result: ", res1);
 
+Deno.exit(1);
 
-// // ----------------------------------------------------------------------------
-// aoc.printPartHeader(2, "Distress beacons tuning frequency");
+// ----------------------------------------------------------------------------
+aoc.printPartHeader(2, "Maximum pressure release working with elephant");
 
-// const res2 = 0;
-// console.log("Result: ", res2);
+const cave2 = new Cave(allValves);
+const res2 = cave2.findMaximumReleaseForPair();
+console.log("Result: ", res2);
