@@ -17,16 +17,6 @@ class Valve {
     }
 }
 
-function copyMatrix(m: Array<Array<number>>): Array<Array<number>> {
-    const res = new Array<Array<number>>();
-
-    for (let i = 0; i < m.length; ++i) {
-        res.push([...m[i]])
-    }
-
-    return res;
-}
-
 class Graph {
 
     size: number
@@ -122,19 +112,18 @@ class Network {
     searchMaxRelease(initialValveRates: Map<string, number>, time: number) {
         let maxRelease = 0;
         const states = new Array<SearchState>();
+        const shortStates = new Map<string, SearchState>();
         const processedShorts = new Map<string, ShortSingleState>();
 
         const initialState = new SearchState("AA", this.nameToIndex, this.graph.shortAdjMatrix, initialValveRates, 0, 0);
         states.push(initialState);
+        shortStates.set(initialState.short.val, initialState);
 
-        let noImprovementOfMaxReleaseCount = 0;
-        while (states.length > 0) { // && noImprovementOfMaxReleaseCount < 100000) {
+        while (states.length > 0) {
             states.sort((a, b) => b.heuristic - a.heuristic);
-            // states.forEach(s => console.log("Heur: ", s.heuristic));
-            // console.log("------------------");
             const nextState = states.shift()!;
+            shortStates.delete(nextState.short.val);
             // console.log(`eval. ${nextState.accumulatedRelease}/${nextState.heuristic} vs. best: ${maxRelease}`);
-            // if ((nextState.accumulatedRelease + 10 > maxRelease) && (nextState.heuristic + 10 < maxRelease)) {
             if (nextState.heuristic + 10 < maxRelease) {
                 // console.log("Found stop condition:");
                 // console.log(`    eval. ${nextState.accumulatedRelease}/${nextState.heuristic} vs. best: ${maxRelease}`);
@@ -150,9 +139,6 @@ class Network {
                 if (nextState.accumulatedRelease > maxRelease) {
                     maxRelease = nextState!.accumulatedRelease;
                     console.log("New max release: ", maxRelease);
-                    noImprovementOfMaxReleaseCount = 0;
-                } else {
-                    ++noImprovementOfMaxReleaseCount;
                 }
                 continue;
             }
@@ -161,44 +147,31 @@ class Network {
             const newStates = new Array<SearchState>();
             for (let i = 0; i < expansion.length; ++i) {
                 const stateToCheck = expansion[i];
-                const rateNamesToCheck = Array.from(stateToCheck.valveRates.keys());
-                const eqState = states.find((s, idx) => {
-                    const eqPos = stateToCheck.pos == s.pos;
-                    const eqTime = stateToCheck.time == s.time;
-                    const eqRates = rateNamesToCheck.map(name => stateToCheck.valveRates.get(name) == s.valveRates.get(name)).reduce((acc, curr) => acc && curr, true);
-                    return eqPos && eqTime && eqRates;
-                });
-                // // let t1 = performance.now();
-                // // const procEqState = processed.find((s, idx) => {
-                // //     const eqPos = stateToCheck.pos == s.pos;
-                // //     const eqTime = stateToCheck.time == s.time;
-                // //     const eqRates = rateNamesToCheck.map(name => stateToCheck.valveRates.get(name) == s.valveRates.get(name)).reduce((acc, curr) => acc && curr, true);
-                // //     return eqPos && eqTime && eqRates;
-                // // });
-                // // let t2 = performance.now();
-                // // sumTimeState += t2 - t1;
-                // // t1 = performance.now();
-                // // const procEqState2 = processed2.has(new ShortSingleState(stateToCheck).val);
-                // // t2 = performance.now();
-                // // sumTimeShort += t2 - t1;
-                if (eqState == undefined) {
+                // const rateNamesToCheck = Array.from(stateToCheck.valveRates.keys());
+                // const eqState = states.find((s, idx) => {
+                //     const eqPos = stateToCheck.pos == s.pos;
+                //     const eqTime = stateToCheck.time == s.time;
+                //     const eqRates = rateNamesToCheck.map(name => stateToCheck.valveRates.get(name) == s.valveRates.get(name)).reduce((acc, curr) => acc && curr, true);
+                //     return eqPos && eqTime && eqRates;
+                // });
+                // if (eqState == undefined) {
+                if (!shortStates.has(stateToCheck.short.val)) {
                     const short = new ShortSingleState(stateToCheck);
                     const procEqState = processedShorts.has(short.val);
-                    // if (procEqState == undefined) {
                     if (!procEqState) {
                         newStates.push(stateToCheck);
                         processedShorts.set(short.val, short);
                     } else {
                         const procEqShortState = processedShorts.get(short.val)!;
-                        // if (stateToCheck.accumulatedRelease > procEqState.accumulatedRelease) {
                         if (stateToCheck.accumulatedRelease > procEqShortState.accumulatedRelease) {
                             newStates.push(stateToCheck);
                             processedShorts.set(short.val, short);
                         } else {
-                            console.log("Already processed better version of state");
+                            // console.log("Already processed better version of state");
                         }
                     }
                 } else {
+                    const eqState = shortStates.get(stateToCheck.short.val)!;
                     if (stateToCheck.accumulatedRelease > eqState.accumulatedRelease) {
                         eqState.accumulatedRelease = stateToCheck.accumulatedRelease;
                         eqState.heuristic = stateToCheck.heuristic;
@@ -209,15 +182,7 @@ class Network {
                 }
             }
             states.push(...newStates);
-            // // processed.push(nextState);
-            // // processed2.add(new ShortSingleState(nextState).val);
-            // // processedKeys.add(short.val);
-            // const short = new ShortSingleState(nextState);
-            // processedShorts.set(short.val, short);
         }
-
-        // // console.log("Time for full states processed: ", sumTimeState);
-        // // console.log("Time for short states processed: ", sumTimeShort);
 
         return maxRelease;
     }
@@ -235,14 +200,10 @@ class Network {
         shortStates.set(initialState.short.val2, initialState);
         heuristics.push(initialState.heuristic);
 
-        let noImprovementOfMaxReleaseCount = 0;
         let count = 0;
-        while (states.length > 0) { // && noImprovementOfMaxReleaseCount < 100000) {
+        while (states.length > 0) {
             ++count;
-            // states.sort((a, b) => b.heuristic - a.heuristic);
-            // const nextState = states.shift()!;
             const maxHeuristic = mymax(heuristics);
-            // const maxHeuristic = Math.max(...(states.map(s => s.heuristic)));
             const hi = heuristics.findIndex(h => h == maxHeuristic);
             heuristics.splice(hi, 1);
             const ni = states.findIndex(s => s.heuristic == maxHeuristic);
@@ -251,25 +212,20 @@ class Network {
             shortStates.delete(nextState.short.val1);
             shortStates.delete(nextState.short.val2);
             // console.log(`eval. ${nextState.accumulatedRelease}/${nextState.heuristic} vs. best: ${maxRelease}`);
-            // if ((nextState.accumulatedRelease + 10 > maxRelease) && (nextState.heuristic + 10 < maxRelease)) {
             if (nextState.heuristic + 10 < maxRelease) {
-                // console.log("Found stop condition:");
-                // console.log(`    eval. ${nextState.accumulatedRelease}/${nextState.heuristic} vs. best: ${maxRelease}`);
-                continue;
+                console.log("Found stop condition:");
+                console.log(`    eval. ${nextState.accumulatedRelease}/${nextState.heuristic} vs. best: ${maxRelease}`);
+                break;
             }
             // console.log(`Evaluating in ${nextState.pos} at t=${nextState.time}: ${nextState.accumulatedRelease}`);
             // console.log(nextState);
-            if (count % 100 == 0) {
-                // console.log(states.length);
-                console.log(`  eval. ${nextState.accumulatedRelease}/${nextState.heuristic} vs. best: ${maxRelease} (len = ${states.length})`);
+            if (count % 5000 == 0) {
+                console.log(`    eval. ${nextState.accumulatedRelease}/${nextState.heuristic} vs. best: ${maxRelease} (len = ${states.length})`);
             }
             if ((nextState.time1 >= time && nextState.time2 >= time) || Math.max(...nextState.valveRates.values()) == 0) {
                 if (nextState.accumulatedRelease > maxRelease) {
                     maxRelease = nextState!.accumulatedRelease;
                     console.log("New max release: ", maxRelease);
-                    noImprovementOfMaxReleaseCount = 0;
-                } else {
-                    ++noImprovementOfMaxReleaseCount;
                 }
                 continue;
             }
@@ -279,29 +235,19 @@ class Network {
             for (let i = 0; i < expansion.length; ++i) {
                 const stateToCheck = expansion[i];
                 // console.log(`  stateToCheck: ${stateToCheck.short.val1} / ${stateToCheck.short.val2}`);
-                // // const rateNamesToCheck = Array.from(stateToCheck.valveRates.keys());
-                // // const eqState = states.find((s, idx) => {
-                // //     const eq11and22 = stateToCheck.pos1 == s.pos1 && stateToCheck.time1 == s.time1 && stateToCheck.pos2 == s.pos2 && stateToCheck.time2 == s.time2
-                // //     const eq12and21 = stateToCheck.pos1 == s.pos2 && stateToCheck.time1 == s.time2 && stateToCheck.pos2 == s.pos1 && stateToCheck.time2 == s.time1
-                // //     const eqRates = rateNamesToCheck.map(name => stateToCheck.valveRates.get(name) == s.valveRates.get(name)).reduce((acc, curr) => acc && curr, true);
-                // //     return (eq11and22 || eq12and21) && eqRates;
-                // // });
-                // if (eqState == undefined) {
                 if (!shortStates.has(stateToCheck.short.val1)) {
-                    // const short = new ShortPairState(stateToCheck);
-                    const short = stateToCheck.short;
-                    const procEqState = processedShorts.has(short.val1);
+                    const procEqState = processedShorts.has(stateToCheck.short.val1);
                     if (!procEqState) {
                         newStates.push(stateToCheck);
-                        processedShorts.set(short.val1, short);
-                        processedShorts.set(short.val2, short);
+                        processedShorts.set(stateToCheck.short.val1, stateToCheck.short);
+                        processedShorts.set(stateToCheck.short.val2, stateToCheck.short);
                     } else {
-                        const procEqShortState = processedShorts.get(short.val1)!;
+                        const procEqShortState = processedShorts.get(stateToCheck.short.val1)!;
                         // console.log(`    Found: ${procEqShortState.val1}`);
                         if (stateToCheck.accumulatedRelease > procEqShortState.accumulatedRelease) {
                             newStates.push(stateToCheck);
-                            processedShorts.set(short.val1, short);
-                            processedShorts.set(short.val2, short);
+                            processedShorts.set(stateToCheck.short.val1, stateToCheck.short);
+                            processedShorts.set(stateToCheck.short.val2, stateToCheck.short);
                             // console.log("Improved version of processed state found");
                         } else {
                             // console.log("Already processed better version of state");
@@ -327,7 +273,6 @@ class Network {
                 shortStates.set(s.short.val2, s);
                 heuristics.push(s.heuristic);
             })
-            // // processed.push(nextState);
         }
 
         return maxRelease;
@@ -402,8 +347,6 @@ class Network {
     }
 }
 
-// Object.assign([], myArray);
-
 class ShortSingleState {
     val: string
     accumulatedRelease: number
@@ -417,9 +360,9 @@ class ShortSingleState {
 class SearchState {
 
     heuristic: number
+    short: ShortSingleState
 
     constructor(public pos: string, nameToIndex: Map<string, number>, public adjMatrix: Array<Array<number>>, public valveRates: Map<string, number>, public time: number, public accumulatedRelease: number) {
-        // const avgValue = Array.from(valveRates.values()).reduce((acc, curr) => acc + curr, 0) / valveRates.size;
         const bestRates = Array.from(valveRates.values()).toSorted((a, b) => b - a);
         // console.log("  best rates: ", bestRates);
         let remainingTime = 30 - time;
@@ -433,7 +376,8 @@ class SearchState {
         }
         // console.log("   g: ", expectedAdditionalRelease);
         this.heuristic = this.accumulatedRelease + expectedAdditionalRelease;
-        // this.heuristic = this.accumulatedRelease + (29 - time) * Math.min(...valveRates.values());
+
+        this.short = new ShortSingleState(this);
     }
 }
 
@@ -485,21 +429,7 @@ class SearchPairState {
                 timeStep1 = 2;
             }
         }
-        // for (remainingTime -= 2; remainingTime > 0; remainingTime -= 2) {
-        //     const nextRate1 = bestRates.shift();
-        //     if (nextRate1 == undefined) {
-        //         break;
-        //     }
-        //     expectedAdditionalRelease += nextRate1 * remainingTime;
-        //     const nextRate2 = bestRates.shift();
-        //     if (nextRate2 == undefined) {
-        //         break;
-        //     }
-        //     expectedAdditionalRelease += nextRate2 * remainingTime;
-        // }
-        // console.log("   g: ", expectedAdditionalRelease);
         this.heuristic = this.accumulatedRelease + expectedAdditionalRelease;
-        // this.heuristic = this.accumulatedRelease + (29 - time) * Math.min(...valveRates.values());
 
         this.short = new ShortPairState(this);
     }
@@ -549,20 +479,15 @@ const allValves = scanOutput.map(l => new Valve(l));
 allValves[0].isStart = true;
 // console.log(allValves);
 
-const skipPart1 = true;
+// ----------------------------------------------------------------------------
+aoc.printPartHeader(1, "Maximum pressure release");
 
-if (!skipPart1) {
-    // ----------------------------------------------------------------------------
-    aoc.printPartHeader(1, "Maximum pressure release");
+const cave1 = new Cave(allValves);
+// console.log(cave1);
+const res1 = cave1.findMaximumRelease();
+// const res1 = 0;
+console.log("Result: ", res1);
 
-    const cave1 = new Cave(allValves);
-    // console.log(cave1);
-    const res1 = cave1.findMaximumRelease();
-    // const res1 = 0;
-    console.log("Result: ", res1);
-
-    // Deno.exit(1);
-}
 
 // ----------------------------------------------------------------------------
 aoc.printPartHeader(2, "Maximum pressure release working with elephant");
